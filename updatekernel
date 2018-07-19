@@ -1,0 +1,40 @@
+#!/bin/bash
+
+die() { printf 'failed\n'; exit 1; }
+set -eE
+trap "die" ERR
+
+version="$(basename $(realpath /usr/src/linux) | sed s/linux-//)"
+[[ x${version}y != xy ]] || { echo "error in symlink"; exit 1; }
+
+## EFI & modules
+signbin="/usr/src/linux/scripts/sign-file"
+dbkey=""
+dbcrt=""
+
+## kernels
+bootlinux="/boot/kernel-genkernel-x86_64-$version"
+uefilinux="/boot/EFI/gentoo/linux-signed.efi"
+
+compileK_M() {
+	genkernel kernel
+	emerge @module-rebuild --quiet-build
+}
+signK_M() {
+	printf '\nSigning kernel & modules...\n\n'
+	find /lib/modules/${version} -name '*.ko' -exec \
+	$signbin sha512 $dbkey $dbcrt '{}' \;
+	#make sure sbsign doesn't wig out and kill the kernel file
+	sbsign --key $dbkey --cert $dbcrt --output ${bootlinux}.signed $bootlinux
+	mv ${bootlinux}.signed $bootlinux
+}
+
+ueficp() { cp $bootlinux $uefilinux; }
+grubup() { grub-mkconfig -o /boot/grub/grub.cfg; }
+
+compileK_M
+signK_M
+ueficp
+grubup
+
+# efibootmgr -c -d $disk -p $part -l '\EFI\gentoo\linux-signed.efi' -L kernel2 -u ' root=PARTUUID=some_UUID ro rootfstype=ext4'
