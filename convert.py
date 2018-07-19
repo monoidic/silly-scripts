@@ -11,7 +11,11 @@ class TranslateClass(object):
   def __getitem__(self, ordinal):
     hexout = ""
     hexchar = bytes(chr(ordinal), "UTF-8").hex()
-    if chr(ordinal) in (".","/","?","#",":","=","&"):
+    special_chars = (
+      "!","*","'","(",")",";",":","@","&",
+      "=","+","$",",","/","?","#","[","]"
+    ) # "."	rfc3986
+    if chr(ordinal) in special_chars:
       return(chr(ordinal))
     elif len(hexchar) > 0:
       for i in range(len(hexchar)):
