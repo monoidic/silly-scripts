@@ -1,0 +1,29 @@
+#!/bin/bash
+
+theprivvid=$(mktemp /tmp/privvid.XXXXXXX)
+hostname=$(sed -n 's/^https\?:\/\/\([^/]\+\).*/\1/p' <<< "$@")
+
+#torsocks curl --progress-bar
+curl --progress-bar --compressed -U user_${RANDOM}:pass_${RANDOM} \
+	-x socks5h://127.0.0.1:9050 -L "$@" -o "$theprivvid" \
+	-H "Host: $hostname" \
+	-H 'User-Agent: Mozilla/5.0 (Windows NT 6.1; rv:52.0) Gecko/20100101 Firefox/52.0' \
+	-H 'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8' \
+	-H 'Accept-Language: en-US,en;q=0.5' \
+	-H "Referer: $@" \
+	-H 'Connection: keep-alive' \
+	-H 'Upgrade-Insecure-Requests: 1'
+
+filetype=$(file -b -- "$theprivvid")
+printf "%s\n" "$filetype"
+if [[ "$filetype" =~ text ]] && grep "why_captcha_detail" "$theprivvid" >/dev/null; then
+	printf "Retrying (CloudFlare)...\n"
+	rm -- "$theprivvid"
+	("$0" "$*")&
+	exit 0
+elif [[ "$filetype" =~ empty ]] || [[ "$filetype" =~ text ]]; then
+	rm -- "$theprivvid"
+	exit 1
+fi
+
+( mpv --loop-file "$theprivvid"; rm -- "$theprivvid" )&
