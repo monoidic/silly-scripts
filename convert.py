@@ -7,6 +7,7 @@ try:
 except IndexError:
   print("No argument provided")
   exit(1)
+
 class TranslateClass(object):
   def __getitem__(self, ordinal):
     hexout = ""
@@ -23,11 +24,14 @@ class TranslateClass(object):
           hexout += "%"
         hexout += hexchar[i]
     return(hexout)
+
 translateobject = TranslateClass()
 prefixmatch = re.match(".*://", text)
-try:
-  prefix = prefixmatch.group()
-except AttributeError:
+
+if prefixmatch == None:
   prefix = ""
+else:
+  prefix = prefixmatch.group()
+
 translated = prefix + text[len(prefix):].translate(translateobject)
 print(translated)
