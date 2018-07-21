@@ -2,11 +2,10 @@
 
 import sys, re
 
-try:
-  text = sys.argv[1]
-except IndexError:
-  print("No argument provided")
+if len(sys.argv) != 2:
+  print("Invalid amount of arguments passed")
   exit(1)
+text = sys.argv[1]
 
 class TranslateClass(object):
   def __getitem__(self, ordinal):
