@@ -15,24 +15,25 @@ class TranslateClass(object):
       "&", "'", "(", ")", "*", "+", ",", ";", "="
     ) #	rfc3986
     if chr(ordinal) in special_chars:
-      return(chr(ordinal))
+      return chr(ordinal)
     hexout = ""
     for i in range(len(hexchar)):
       if i % 2 == 0:
         hexout += "%"
       hexout += hexchar[i]
-    return(hexout)
+    return hexout
 
 tr_obj = TranslateClass()
 parsed = urllib.parse.urlparse(text)
 if parsed.scheme == "":
   parsed = urllib.parse.urlparse("//" + text)
 
+schemestuff = parsed.scheme + "://" if parsed.scheme else ""
 portstuff = ":" + str(parsed.port) if parsed.port != None else ""
-querystuff = "?" + parsed.query.translate(tr_obj) if parsed.query != "" else ""
-fragmentstuff = "#" + parsed.fragment.translate(tr_obj) if parsed.fragment != "" else ""
+querystuff = "?" + parsed.query.translate(tr_obj) if parsed.query else ""
+fragmentstuff = "#" + parsed.fragment.translate(tr_obj) if parsed.fragment  else ""
 
 
-translated = parsed.scheme + "://" + parsed.hostname.translate(tr_obj) + portstuff
+translated = schemestuff + parsed.hostname.translate(tr_obj) + portstuff
 translated = translated + parsed.path.translate(tr_obj) + querystuff + fragmentstuff
 print(translated)
