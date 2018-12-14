@@ -26,7 +26,7 @@ class TranslateClass(object):
 tr_obj = TranslateClass()
 parsed = urllib.parse.urlparse(text)
 if parsed.scheme == "":
-  parsed = urllib.parse.urlparse("http://" + text)
+  parsed = urllib.parse.urlparse("//" + text)
 
 portstuff = ":" + str(parsed.port) if parsed.port != None else ""
 querystuff = "?" + parsed.query.translate(tr_obj) if parsed.query != "" else ""
