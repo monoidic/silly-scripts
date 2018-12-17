@@ -26,9 +26,9 @@ tr_obj = TranslateClass()
 
 parsed = urllib.parse.urlparse(sys.argv[1])
 if parsed.netloc == "":
-  parsed = urllib.parse.urlparse("noscheme://" + sys.argv[1])
+  parsed = urllib.parse.urlparse("//" + sys.argv[1])
 
-schemestuff = parsed.scheme + "://" if (parsed.scheme and parsed.scheme != "noscheme") else ""
+schemestuff = parsed.scheme + "://" if parsed.scheme else ""
 portstuff = ":" + str(parsed.port) if parsed.port else ""
 querystuff = "?" + parsed.query.translate(tr_obj) if parsed.query else ""
 fragmentstuff = "#" + parsed.fragment.translate(tr_obj) if parsed.fragment else ""
