@@ -1,40 +1,74 @@
 #!/bin/bash
 
+set -ueE
 die() { printf 'failed\n'; exit 1; }
-set -eE
-trap "die" ERR
+trap 'die' ERR
 
-version="$(basename $(realpath /usr/src/linux) | sed s/linux-//)"
-[[ x${version}y != xy ]] || { echo "error in symlink"; exit 1; }
+version=$(basename "$(realpath /usr/src/linux)" | sed s/linux-//)
+[[ "x${version}y" != xy ]] || die
 
 ## EFI & modules
-signbin="/usr/src/linux/scripts/sign-file"
-dbkey=""
-dbcrt=""
+signbin='/usr/src/linux/scripts/sign-file'
+dbkey='' #set
+dbcrt='' #set
+grubbin='/boot/EFI/BOOT/BOOTX64.EFI'
+sysdbin='/boot/EFI/systemd/systemd-bootx64.efi'
 
 ## kernels
-bootlinux="/boot/kernel-genkernel-x86_64-$version"
-uefilinux="/boot/EFI/gentoo/linux-signed.efi"
+bootlinux="/boot/kernel-genkernel-x86_64-${version}"
+
+_sign() {
+	sbsign --key "$dbkey" --cert "$dbcrt" --output "$2" "$1"
+}
+
+_verify() {
+	sbverify --cert "$dbcrt" "$1"
+}
 
 compileK_M() {
 	genkernel kernel
-	emerge @module-rebuild --quiet-build
-}
-signK_M() {
-	printf '\nSigning kernel & modules...\n\n'
-	find /lib/modules/${version} -name '*.ko' -exec \
-	$signbin sha512 $dbkey $dbcrt '{}' \;
-	#make sure sbsign doesn't wig out and kill the kernel file
-	sbsign --key $dbkey --cert $dbcrt --output ${bootlinux}.signed $bootlinux
-	mv ${bootlinux}.signed $bootlinux
+	emerge --nodeps --quiet-build @module-rebuild
 }
 
-ueficp() { cp $bootlinux $uefilinux; }
-grubup() { grub-mkconfig -o /boot/grub/grub.cfg; }
+signK_M() {
+	printf '\nSigning kernel & modules...\n\n'
+	find "/lib/modules/${version}" -name '*.ko' -exec \
+		"$signbin" sha512 "$dbkey" "$dbcrt" '{}' \;
+	#make sure sbsign doesn't wig out and kill the kernel file
+	_sign "$bootlinux" "${bootlinux}.signed"
+	mv "${bootlinux}.signed" "$bootlinux"
+	_verify "$grubbin" || {
+		cp "$grubbin" "${grubbin}.unsigned"
+		_sign "${grubbin}.unsigned" "$grubbin"
+	}
+}
+
+dracutstuff() { # has to be after signing the modules
+	dracut --force --hostonly --gzip "/boot/initramfs-genkernel-x86_64-${version}" "$version"
+}
+
+up_current() {
+	cp "/boot/kernel-genkernel-x86_64-${version}" /boot/current-kernel
+	cp "/boot/initramfs-genkernel-x86_64-${version}" /boot/current-initrd
+}
+
+grubup() {
+	grub-mkconfig -o /boot/grub/grub.cfg
+}
+
+sysdup() {
+	bootctl --no-variables --no-pager update || true # may return 1 due to grub, pay attention
+	_verify "$sysdbin" || {
+		cp "$sysdbin" "${sysdbin}.unsigned"
+		_sign "${sysdbin}.unsigned" "$sysdbin"
+	}
+}
 
 compileK_M
 signK_M
-ueficp
+dracutstuff
+up_current
 grubup
+sysdup
 
 # efibootmgr -c -d $disk -p $part -l '\EFI\gentoo\linux-signed.efi' -L kernel2 -u ' root=PARTUUID=some_UUID ro rootfstype=ext4'

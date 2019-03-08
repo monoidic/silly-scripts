@@ -8,13 +8,13 @@ if len(sys.argv) != 2:
 
 class TranslateClass(object):
   def __getitem__(self, ordinal):
-    hexchar = bytes(chr(ordinal), "UTF-8").hex()
     special_chars = (
       ":", "/", "?", "#", "[", "]", "@", "!", "$",
       "&", "'", "(", ")", "*", "+", ",", ";", "="
     ) #	rfc3986
     if chr(ordinal) in special_chars:
       return chr(ordinal)
+    hexchar = bytes(chr(ordinal), "UTF-8").hex()
     hexout = ""
     for i in range(len(hexchar)):
       if i % 2 == 0:
