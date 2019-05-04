@@ -16,11 +16,10 @@ class TranslateClass(object):
       return ordinal
     hexchar = bytes(chr(ordinal), 'UTF-8').hex()
     hexout = ''
-    for i in range(len(hexchar)):
-      if i % 2 == 0:
-        hexout += '%'
-      hexout += hexchar[i]
+    for i in range(0, len(hexchar), 2):
+      hexout += '%' + hexchar[i:i+2]
     return hexout
+
 
 tr_obj = TranslateClass()
 
@@ -31,7 +30,7 @@ if parsed.netloc == '':
 newurl = (
   parsed.scheme if parsed.scheme else '',
   parsed.hostname.translate(tr_obj) +
-    str(':' + str(parsed.port) if parsed.port else ''),
+    (':' + str(parsed.port) if parsed.port else ''),
   parsed.path.translate(tr_obj),
   '',
   parsed.query.translate(tr_obj) if parsed.query else '',
