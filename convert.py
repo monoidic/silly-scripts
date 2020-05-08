@@ -23,15 +23,15 @@ tr_obj = TranslateClass()
 def ipv4_obfuscate(addr):
   addr = ipaddress.IPv4Address(addr)
   packed = addr.packed
-  octal = f'0{oct(packed[0])[2:]}.0{oct(packed[1])[2:]}.0{oct(packed[2])[2:]}.0{oct(packed[3])[2:]}'
+  octal = '0' + '.0'.join(map(lambda x: oct(x)[2:], packed))
   hex1 = hex(int.from_bytes(packed, 'big'))
-  hex2 = f'{hex(packed[0])}.{hex(packed[1])}.{hex(packed[2])}.{hex(packed[3])}'
+  hex2 = '.'.join(map(lambda x: hex(x), packed))
   dword = str(int.from_bytes(packed, 'big'))
 
   return [octal, hex1, hex2, dword]
 
 def match_ipv4(hostname):
-  pattern = r'[12]?[0-9]{1,2}\.[12]?[0-9]{1,2}\.[12]?[0-9]{1,2}\.[12]?[0-9]{1,2}'
+  pattern = '.'.join([r'[12]?[0-9]{1,2}'] * 4)
   return re.fullmatch(pattern, hostname) != None
 
 def obfuscate_url(url):
@@ -45,9 +45,9 @@ def obfuscate_url(url):
 
   obf_url = [
     parsed.scheme if parsed.scheme else '',
-    'hostname goes here',
+    '', # hostname goes here,
     parsed.path.translate(tr_obj),
-    '', #params (literally never seen them)
+    '', # params (literally never seen them)
     parsed.query.translate(tr_obj) if parsed.query else '',
     parsed.fragment.translate(tr_obj) if parsed.fragment else ''
   ]
@@ -68,5 +68,4 @@ if __name__ == '__main__':
     exit(1)
 
   obf_urls = obfuscate_url(sys.argv[1])
-  for url in obf_urls:
-    print(url)
+  print('\n'.join(obf_urls))
