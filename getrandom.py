@@ -13,19 +13,20 @@ _getrandom = _libc.getrandom
 _getrandom.argtypes = (_ctypes.c_void_p, _ctypes.c_ssize_t, _ctypes.c_uint)
 _getrandom.restype = _ctypes.c_ssize_t
 
-def getrandom(buflen, flags=0):
-  assert flags & ~(GRND_RANDOM | GRND_NONBLOCK) == 0 # the only valid flags
-  buf = _ctypes.create_string_buffer(buflen)
-  written = _getrandom(buf, buflen, flags)
-  ret = buf.raw
-  del buf
-  if written != buflen: # didn't write enough or returned -1
-    if written == -1:
-      written = 0
-    return ret[:written]
-  return ret
+def getrandom(buflen: int, flags:int=0) -> bytes:
+    assert flags & ~(GRND_RANDOM | GRND_NONBLOCK) == 0 # the only valid flags
+    buf = _ctypes.create_string_buffer(buflen)
+    written = _getrandom(buf, buflen, flags)
+    ret = buf.raw
+    del buf
 
-def main():
+    if written != buflen: # didn't write enough or returned -1
+        if written == -1:
+            written = 0
+        return ret[:written]
+    return ret
+
+def main() -> None:
   print('0x' + getrandom(256).hex())
 
 if __name__ == '__main__':
